@@ -461,6 +461,9 @@ are hard to bat in, but the label is automatic there.</li>
 <p><code>python analysis/pressure.py --check</code> rebuilds the match state, the ratings and the checks, and writes every
 eligible player to <code>batters.csv</code> and <code>bowlers.csv</code>. <code>python analysis/report.py</code> builds this
 report. Both use only the data pack, pandas, numpy and matplotlib.</p>
+<p>The code, this report and the dashboard are at <a href="https://github.com/SrivarsanK/SupeRR">github.com/SrivarsanK/SupeRR</a>
+(the data pack itself is not included, as the contest rules require). Dashboard:
+<a href="https://rr-pressure-ranking.vercel.app">rr-pressure-ranking.vercel.app</a>.</p>
 </body></html>"""
     os.makedirs(DIR, exist_ok=True)
     page = os.path.join(DIR, "report.html")
