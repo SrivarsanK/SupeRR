@@ -1,0 +1,7 @@
+# Contest data pack and outputs derived from it stay local (contest rule).
+data/
+analysis/out/
+# Third-party clone with its own git history and venv.
+cricket-mcp-server/
+__pycache__/
+.edge-profile/

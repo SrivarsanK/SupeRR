@@ -1,0 +1,1277 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Reliable under pressure</title>
+<style>
+@page { size: A4; margin: 18mm 18mm 20mm; }
+body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; font-size: 10pt; line-height: 1.5; margin: 0; }
+h1 { font-size: 20pt; margin: 0 0 4pt; font-weight: 600; }
+h2 { font-size: 13pt; margin: 20pt 0 6pt; font-weight: 600; break-after: avoid; }
+h3 { font-size: 10.5pt; margin: 12pt 0 4pt; font-weight: 600; break-after: avoid; }
+p { margin: 0 0 7pt; }
+.sub { color: #555; margin-bottom: 14pt; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; break-inside: avoid; }
+th { text-align: left; font-weight: 600; border-bottom: 1px solid #1a1a1a; padding: 3pt 6pt 3pt 0; }
+td { border-bottom: 1px solid #e3e3e3; padding: 3pt 6pt 3pt 0; }
+ul { margin: 0 0 8pt; padding-left: 14pt; } li { margin-bottom: 3pt; }
+.fig { margin: 4pt 0 10pt; break-inside: avoid; } .fig svg { width: 100%; height: auto; }
+.note { font-size: 9pt; color: #555; }
+.page { break-before: page; }
+.card { break-inside: avoid; border-top: 1px solid #d0d0d0; padding-top: 8pt; margin-top: 12pt; }
+.card h3 { margin: 0 0 2pt; font-size: 11pt; }
+.card table { margin: 2pt 0 5pt; font-size: 8.5pt; }
+.card th, .card td { padding: 1.5pt 6pt 1.5pt 0; }
+.meta { color: #555; font-size: 8.5pt; margin-bottom: 5pt; }
+.small { font-size: 8.5pt; margin-bottom: 3pt; }
+.two { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16pt; align-items: start; }
+h2.group { font-size: 11.5pt; margin-top: 14pt; }
+</style></head><body>
+
+<h1>Reliable under pressure</h1>
+<p class="sub">SupeRR Selector Season 2, Round 1. IPL and T20I ball-by-ball data, 2022 to 2026.</p>
+
+<p>I scored every ball in the data pack for how much pressure the batting side was under, then rated each player on the
+high-pressure balls only, using a batter-against-bowler Elo. These are my two lists.</p>
+<table><thead><tr><th>Rank</th><th>Batter</th><th>Bowler</th></tr></thead><tbody><tr><td>1</td><td>Tim David</td><td>Sunil Narine</td></tr><tr><td>2</td><td>Namboori Tilak Varma</td><td>Rashid Khan</td></tr><tr><td>3</td><td>Suryakumar Yadav</td><td>Jasprit Bumrah</td></tr><tr><td>4</td><td>Shivam Dube</td><td>Jofra Archer</td></tr><tr><td>5</td><td>Shashank Singh</td><td>Mitchell Santner</td></tr><tr><td>6</td><td>Heinrich Klaasen</td><td>Kuldeep Yadav</td></tr><tr><td>7</td><td>Shreyas Iyer</td><td>Mustafizur Rahman</td></tr><tr><td>8</td><td>Marcus Stoinis</td><td>Varun Chakravarthy</td></tr><tr><td>9</td><td>Azmatullah Omarzai</td><td>Taskin Ahmed</td></tr><tr><td>10</td><td>Romario Shepherd</td><td>Akeal Hosein</td></tr></tbody></table>
+
+<p>Ratings come from 200,961 balls in 367 IPL and 500 T20I matches. Everything below can be rebuilt from the
+data pack with two Python scripts (last section).</p>
+
+<h2>1. What counts as pressure</h2>
+<p>Pressure is about the state of the match before the ball is bowled, not about what happens on it. I rebuilt the score,
+wickets, legal balls and target for every delivery and combined three signals into a pressure index from 0 to 1.</p>
+<ul>
+<li><b>Required rate</b> (chases only). Six an over counts as routine and fifteen as extreme, scaled in between. A chase
+that needs more than 18 an over, or is already won, scores zero: the result is no longer in doubt.</li>
+<li><b>Collapse</b>. Wickets lost compared with the average for that over and innings. Three wickets above par is the maximum.</li>
+<li><b>Time left</b>. How far through the innings the ball is. The same situation is harder to fix with four balls left
+than with forty.</li>
+</ul>
+<p>Chasing: 0.5 required rate + 0.2 collapse + 0.3 time. Batting first: 0.5 collapse + 0.5 time, because there is no
+target yet. Knockout matches get a 10% uplift. The top quarter of balls by index (index of 0.46 or more) are
+high pressure; that is 50,243 balls.</p>
+
+<h3>Does it pick out different situations?</h3>
+<table><thead><tr><th></th><th>Normal balls</th><th>High-pressure balls</th></tr></thead><tbody><tr><td>Balls</td><td>145,140</td><td>48,111</td></tr><tr><td>Balls per wicket</td><td>20.0</td><td>14.6</td></tr><tr><td>Strike rate</td><td>139.5</td><td>139.5</td></tr><tr><td>Dot balls</td><td>37%</td><td>36%</td></tr><tr><td>Boundary balls</td><td>19%</td><td>18%</td></tr></tbody></table>
+<p>Wickets fall 37% more often under pressure, and the scoring rate
+does not drop. Pressure also turns up
+where cricket sense says it should: 61% of balls in overs 16-20 of a first innings, 34% of the middle
+overs of a chase, and 32% of balls in knockout games against 25% in league games.</p>
+<div class="fig"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="405.855312pt" height="173.080701pt" viewBox="0 0 405.855312 173.080701" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-17T21:56:06.840381</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 173.080701 
+L 405.855312 173.080701 
+L 405.855312 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 41.535313 137.988123 
+L 398.655313 137.988123 
+L 398.655313 10.476123 
+L 41.535313 10.476123 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m2bd36f40d5" d="M 0 0 
+L 0 3.5 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="57.76804" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="57.76804" y="151.540369" transform="rotate(-0 57.76804 151.540369)">1</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="91.942202" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="91.942202" y="151.540369" transform="rotate(-0 91.942202 151.540369)">3</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="126.116365" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="126.116365" y="151.540369" transform="rotate(-0 126.116365 151.540369)">5</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="160.290528" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="160.290528" y="151.540369" transform="rotate(-0 160.290528 151.540369)">7</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="194.46469" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="194.46469" y="151.540369" transform="rotate(-0 194.46469 151.540369)">9</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="228.638853" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="228.638853" y="151.540369" transform="rotate(-0 228.638853 151.540369)">11</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="262.813016" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="262.813016" y="151.540369" transform="rotate(-0 262.813016 151.540369)">13</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="296.987179" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="296.987179" y="151.540369" transform="rotate(-0 296.987179 151.540369)">15</text>
+     </g>
+    </g>
+    <g id="xtick_9">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="331.161341" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="331.161341" y="151.540369" transform="rotate(-0 331.161341 151.540369)">17</text>
+     </g>
+    </g>
+    <g id="xtick_10">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m2bd36f40d5" x="365.335504" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="365.335504" y="151.540369" transform="rotate(-0 365.335504 151.540369)">19</text>
+     </g>
+    </g>
+    <g id="text_11">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="220.095313" y="163.986658" transform="rotate(-0 220.095313 163.986658)">Over</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_11">
+      <defs>
+       <path id="m7298172a0d" d="M 0 0 
+L -3.5 0 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="137.988123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="141.264246" transform="rotate(-0 34.535313 141.264246)">0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="112.485723" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="115.761846" transform="rotate(-0 34.535313 115.761846)">20</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_13">
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="86.983323" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="90.259446" transform="rotate(-0 34.535313 90.259446)">40</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="61.480923" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="64.757046" transform="rotate(-0 34.535313 64.757046)">60</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_15">
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="35.978523" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="39.254646" transform="rotate(-0 34.535313 39.254646)">80</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m7298172a0d" x="41.535313" y="10.476123" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="34.535313" y="13.752246" transform="rotate(-0 34.535313 13.752246)">100</text>
+     </g>
+    </g>
+    <g id="text_18">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="13.862813" y="74.232123" transform="rotate(-90 13.862813 74.232123)">High-pressure balls (%)</text>
+    </g>
+   </g>
+   <g id="line2d_17">
+    <path d="M 57.76804 137.988123 
+L 74.855121 137.707569 
+L 91.942202 136.565263 
+L 109.029284 137.110366 
+L 126.116365 135.26952 
+L 143.203446 132.332639 
+L 160.290528 127.941723 
+L 177.377609 122.659732 
+L 194.46469 116.377558 
+L 211.551772 109.35757 
+L 228.638853 101.748885 
+L 245.725935 109.032374 
+L 262.813016 110.624305 
+L 279.900097 104.183297 
+L 296.987179 95.49233 
+L 314.07426 87.178557 
+L 331.161341 78.453411 
+L 348.248423 79.072174 
+L 365.335504 48.008418 
+L 382.422585 10.476123 
+" clip-path="url(#p7de1d3832a)" style="fill: none; stroke: #9a9a9a; stroke-width: 2; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_18">
+    <path d="M 57.76804 136.567309 
+L 74.855121 134.39691 
+L 91.942202 131.783395 
+L 109.029284 130.011046 
+L 126.116365 126.585794 
+L 143.203446 123.083169 
+L 160.290528 118.585735 
+L 177.377609 111.952675 
+L 194.46469 106.470818 
+L 211.551772 100.149399 
+L 228.638853 92.38646 
+L 245.725935 86.363935 
+L 262.813016 80.656945 
+L 279.900097 77.395639 
+L 296.987179 76.105318 
+L 314.07426 78.369229 
+L 331.161341 81.490955 
+L 348.248423 90.633006 
+L 365.335504 101.020994 
+L 382.422585 118.350312 
+" clip-path="url(#p7de1d3832a)" style="fill: none; stroke: #c2185b; stroke-width: 2; stroke-linecap: square"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 41.535313 137.988123 
+L 41.535313 10.476123 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 41.535313 137.988123 
+L 398.655313 137.988123 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="legend_1">
+    <g id="line2d_19">
+     <path d="M 49.635313 22.184561 
+L 58.635313 22.184561 
+L 67.635312 22.184561 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 2; stroke-linecap: square"/>
+    </g>
+    <g id="text_19">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="74.835313" y="25.334561" transform="rotate(-0 74.835313 25.334561)">Batting first</text>
+    </g>
+    <g id="line2d_20">
+     <path d="M 49.635313 35.465186 
+L 58.635313 35.465186 
+L 67.635312 35.465186 
+" style="fill: none; stroke: #c2185b; stroke-width: 2; stroke-linecap: square"/>
+    </g>
+    <g id="text_20">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="74.835313" y="38.615186" transform="rotate(-0 74.835313 38.615186)">Chasing</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p7de1d3832a">
+   <rect x="41.535313" y="10.476123" width="357.12" height="127.512"/>
+  </clipPath>
+ </defs>
+</svg>
+</div>
+
+<h2>2. How players are rated</h2>
+<h3>Value of each ball</h3>
+<p>A strike rate of 160 in the 19th over of a chase is not the same as 160 in the powerplay. So each ball is first compared
+with what an average player did in the same context: same format (IPL or T20I), innings, over and pressure band. The
+batter's value is runs above that average, minus 6 runs for a dismissal above the average rate. The bowler's value is the
+mirror image: runs saved, plus 6 runs a wicket. Byes and leg-byes are not charged to the bowler; wides and no-balls are.</p>
+
+<h3>Pressure Elo</h3>
+<p>Every high-pressure ball is a duel. The batter scores 0.5 for an average ball, more for a good one, close to 0 if out;
+the bowler gets the rest. Both start at 1500, and ratings move after each ball in date order. The expected score depends
+on the rating gap, so runs off a top bowler count for more than runs off a weak one, and the same for wickets. The step
+size is small (K = 2 a ball) because one ball tells you little; of the step sizes I tried (2, 4 and 8), 2 gave the most
+repeatable ratings.</p>
+
+<h3>Baseline</h3>
+<p>The same Elo run on normal balls gives each player's usual level. The tables show both, so you can see who rises and
+who simply keeps their level. The ranking itself uses the pressure Elo, because the brief asks who delivers most when it
+matters, not who improves the most.</p>
+
+<h3>Fair comparisons</h3>
+<ul>
+<li><b>Sample size.</b> At least 120 high-pressure balls across 12 or more matches.
+Elo itself starts everyone at 1500 and only moves them with evidence, so short records stay close to average.</li>
+<li><b>Active players.</b> At least one match since January 2025.</li>
+<li><b>Players RR can sign.</b> Pakistan internationals are left out of the rankings because IPL teams cannot sign them.
+They still count as opponents in everyone else's ratings. Without this rule Sufiyan Muqeem and Abrar Ahmed would be 2nd
+and 5th among bowlers. Andre Russell is left out for the same reason: he retired from the IPL in November 2025. He would
+otherwise be 6th among batters.</li>
+<li><b>IPL and T20I.</b> Both are used. Averages are set separately for each, and the Elo rewards beating strong
+opponents, so runs against weaker T20I attacks count for less.</li>
+<li><b>Match context.</b> Rain-revised targets and overs are used for the chase. Super overs are left out.</li>
+</ul>
+<p>That leaves 97 batters and 112 bowlers who qualify.</p>
+
+<h2 class="page">3. Top 10 batters</h2>
+<table><thead><tr><th>#</th><th>Batter</th><th>Pressure balls</th><th>Matches</th><th>SR pressure</th><th>SR normal</th><th>Outs</th><th>Good matches*</th><th>Normal Elo</th><th>Pressure Elo</th></tr></thead><tbody><tr><td>1</td><td>Tim David</td><td>594</td><td>60</td><td>178</td><td>178</td><td>28</td><td>69%</td><td>1522</td><td><b>1527</b></td></tr><tr><td>2</td><td>Namboori Tilak Varma</td><td>689</td><td>63</td><td>164</td><td>135</td><td>27</td><td>58%</td><td>1503</td><td><b>1524</b></td></tr><tr><td>3</td><td>Suryakumar Yadav</td><td>493</td><td>36</td><td>187</td><td>162</td><td>21</td><td>65%</td><td>1515</td><td><b>1520</b></td></tr><tr><td>4</td><td>Shivam Dube</td><td>551</td><td>54</td><td>163</td><td>149</td><td>23</td><td>63%</td><td>1501</td><td><b>1519</b></td></tr><tr><td>5</td><td>Shashank Singh</td><td>339</td><td>30</td><td>174</td><td>142</td><td>9</td><td>64%</td><td>1500</td><td><b>1519</b></td></tr><tr><td>6</td><td>Heinrich Klaasen</td><td>498</td><td>41</td><td>163</td><td>169</td><td>25</td><td>74%</td><td>1518</td><td><b>1517</b></td></tr><tr><td>7</td><td>Shreyas Iyer</td><td>303</td><td>27</td><td>173</td><td>149</td><td>15</td><td>62%</td><td>1519</td><td><b>1517</b></td></tr><tr><td>8</td><td>Marcus Stoinis</td><td>464</td><td>45</td><td>168</td><td>145</td><td>25</td><td>60%</td><td>1505</td><td><b>1517</b></td></tr><tr><td>9</td><td>Azmatullah Omarzai</td><td>358</td><td>37</td><td>142</td><td>132</td><td>20</td><td>51%</td><td>1497</td><td><b>1515</b></td></tr><tr><td>10</td><td>Romario Shepherd</td><td>497</td><td>58</td><td>154</td><td>156</td><td>24</td><td>58%</td><td>1501</td><td><b>1515</b></td></tr></tbody></table>
+<p class="note">*Share of matches (3+ pressure balls) where his pressure balls were worth more than average, pulled towards 50% when there are few matches.</p>
+<div class="fig"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="466.757969pt" height="208.946914pt" viewBox="0 0 466.757969 208.946914" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-17T21:56:06.967713</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M -0 208.946914 
+L 466.757969 208.946914 
+L 466.757969 0 
+L -0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 102.437969 173.52 
+L 459.557969 173.52 
+L 459.557969 7.2 
+L 102.437969 7.2 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 151.723295 173.52 
+L 151.723295 7.2 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #e6e6e6; stroke-linecap: square"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_2">
+      <defs>
+       <path id="m1a7890c10a" d="M 0 0 
+L 0 3.5 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m1a7890c10a" x="151.723295" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="151.723295" y="187.072246" transform="rotate(-0 151.723295 187.072246)">1500</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m1a7890c10a" x="206.605838" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="206.605838" y="187.072246" transform="rotate(-0 206.605838 187.072246)">1505</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m1a7890c10a" x="261.488381" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="261.488381" y="187.072246" transform="rotate(-0 261.488381 187.072246)">1510</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m1a7890c10a" x="316.370924" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="316.370924" y="187.072246" transform="rotate(-0 316.370924 187.072246)">1515</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m1a7890c10a" x="371.253467" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="371.253467" y="187.072246" transform="rotate(-0 371.253467 187.072246)">1520</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m1a7890c10a" x="426.13601" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="426.13601" y="187.072246" transform="rotate(-0 426.13601 187.072246)">1525</text>
+     </g>
+    </g>
+    <g id="text_7">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="280.997969" y="199.629102" transform="rotate(-0 280.997969 199.629102)">Batting Elo</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_8">
+      <defs>
+       <path id="m7e81dffa55" d="M 0 0 
+L -3.5 0 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="165.96" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="169.291406" transform="rotate(-0 95.437969 169.291406)">Romario Shepherd</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="149.16" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="152.491406" transform="rotate(-0 95.437969 152.491406)">Azmatullah Omarzai</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="132.36" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="135.649219" transform="rotate(-0 95.437969 135.649219)">Marcus Stoinis</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="115.56" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="118.891406" transform="rotate(-0 95.437969 118.891406)">Shreyas Iyer</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="98.76" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="102.091406" transform="rotate(-0 95.437969 102.091406)">Heinrich Klaasen</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_13">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="81.96" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="85.291406" transform="rotate(-0 95.437969 85.291406)">Shashank Singh</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="65.16" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="68.491406" transform="rotate(-0 95.437969 68.491406)">Shivam Dube</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_15">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="48.36" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="51.691406" transform="rotate(-0 95.437969 51.691406)">Suryakumar Yadav</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="31.56" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="34.891406" transform="rotate(-0 95.437969 34.891406)">Namboori Tilak Varma</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_17">
+      <g>
+       <use xlink:href="#m7e81dffa55" x="102.437969" y="14.76" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="95.437969" y="18.091406" transform="rotate(-0 95.437969 18.091406)">Tim David</text>
+     </g>
+    </g>
+   </g>
+   <g id="LineCollection_1">
+    <path d="M 160.126938 165.96 
+L 318.649512 165.96 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 118.670696 149.16 
+L 319.424051 149.16 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 209.960982 132.36 
+L 335.955017 132.36 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 354.910505 115.56 
+L 342.521132 115.56 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 353.399115 98.76 
+L 343.624799 98.76 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 150.797488 81.96 
+L 359.608392 81.96 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 159.26948 65.16 
+L 360.991645 65.16 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 316.621289 48.36 
+L 374.682126 48.36 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 181.988401 31.56 
+L 416.409915 31.56 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 388.511208 14.76 
+L 443.325241 14.76 
+" clip-path="url(#pcdbc4ba3f8)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 102.437969 173.52 
+L 102.437969 7.2 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 102.437969 173.52 
+L 459.557969 173.52 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="m728c064746" d="M 0 2.645751 
+C 0.701661 2.645751 1.374679 2.366978 1.870829 1.870829 
+C 2.366978 1.374679 2.645751 0.701661 2.645751 0 
+C 2.645751 -0.701661 2.366978 -1.374679 1.870829 -1.870829 
+C 1.374679 -2.366978 0.701661 -2.645751 0 -2.645751 
+C -0.701661 -2.645751 -1.374679 -2.366978 -1.870829 -1.870829 
+C -2.366978 -1.374679 -2.645751 -0.701661 -2.645751 0 
+C -2.645751 0.701661 -2.366978 1.374679 -1.870829 1.870829 
+C -1.374679 2.366978 -0.701661 2.645751 0 2.645751 
+z
+" style="stroke: #9a9a9a"/>
+    </defs>
+    <g clip-path="url(#pcdbc4ba3f8)">
+     <use xlink:href="#m728c064746" x="160.126938" y="165.96" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="118.670696" y="149.16" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="209.960982" y="132.36" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="354.910505" y="115.56" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="353.399115" y="98.76" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="150.797488" y="81.96" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="159.26948" y="65.16" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="316.621289" y="48.36" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="181.988401" y="31.56" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#m728c064746" x="388.511208" y="14.76" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="m58c9d65358" d="M 0 2.645751 
+C 0.701661 2.645751 1.374679 2.366978 1.870829 1.870829 
+C 2.366978 1.374679 2.645751 0.701661 2.645751 0 
+C 2.645751 -0.701661 2.366978 -1.374679 1.870829 -1.870829 
+C 1.374679 -2.366978 0.701661 -2.645751 0 -2.645751 
+C -0.701661 -2.645751 -1.374679 -2.366978 -1.870829 -1.870829 
+C -2.366978 -1.374679 -2.645751 -0.701661 -2.645751 0 
+C -2.645751 0.701661 -2.366978 1.374679 -1.870829 1.870829 
+C -1.374679 2.366978 -0.701661 2.645751 0 2.645751 
+z
+" style="stroke: #c2185b"/>
+    </defs>
+    <g clip-path="url(#pcdbc4ba3f8)">
+     <use xlink:href="#m58c9d65358" x="318.649512" y="165.96" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="319.424051" y="149.16" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="335.955017" y="132.36" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="342.521132" y="115.56" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="343.624799" y="98.76" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="359.608392" y="81.96" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="360.991645" y="65.16" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="374.682126" y="48.36" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="416.409915" y="31.56" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#m58c9d65358" x="443.325241" y="14.76" style="fill: #c2185b; stroke: #c2185b"/>
+    </g>
+   </g>
+   <g id="legend_1">
+    <g id="PathCollection_3">
+     <g>
+      <use xlink:href="#m728c064746" x="387.342813" y="148.106602" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     </g>
+    </g>
+    <g id="text_18">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="403.542813" y="150.469102" transform="rotate(-0 403.542813 150.469102)">Normal Elo</text>
+    </g>
+    <g id="PathCollection_4">
+     <g>
+      <use xlink:href="#m58c9d65358" x="387.342813" y="161.163457" style="fill: #c2185b; stroke: #c2185b"/>
+     </g>
+    </g>
+    <g id="text_19">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="403.542813" y="163.525957" transform="rotate(-0 403.542813 163.525957)">Pressure Elo</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pcdbc4ba3f8">
+   <rect x="102.437969" y="7.2" width="357.12" height="166.32"/>
+  </clipPath>
+ </defs>
+</svg>
+</div>
+<p>Tim David is top without a pressure lift: his strike rate is the same either way, and he does it against strong attacks.
+Namboori Tilak Varma, Shashank Singh, Shivam Dube and Azmatullah Omarzai gain 18 to 21 Elo points when the pressure is on.
+Klaasen and Shreyas Iyer simply hold their usual high level.</p>
+
+<h2 class="page">4. Top 10 bowlers</h2>
+<table><thead><tr><th>#</th><th>Bowler</th><th>Pressure balls</th><th>Matches</th><th>Econ pressure</th><th>Econ normal</th><th>Wkts</th><th>Good matches*</th><th>Normal Elo</th><th>Pressure Elo</th></tr></thead><tbody><tr><td>1</td><td>Sunil Narine</td><td>392</td><td>31</td><td>5.65</td><td>7.30</td><td>23</td><td>72%</td><td>1516</td><td><b>1519</b></td></tr><tr><td>2</td><td>Rashid Khan</td><td>831</td><td>71</td><td>7.40</td><td>7.45</td><td>64</td><td>65%</td><td>1506</td><td><b>1513</b></td></tr><tr><td>3</td><td>Jasprit Bumrah</td><td>509</td><td>60</td><td>7.52</td><td>7.15</td><td>34</td><td>54%</td><td>1513</td><td><b>1511</b></td></tr><tr><td>4</td><td>Jofra Archer</td><td>282</td><td>41</td><td>8.53</td><td>9.16</td><td>23</td><td>56%</td><td>1504</td><td><b>1510</b></td></tr><tr><td>5</td><td>Mitchell Santner</td><td>465</td><td>42</td><td>6.86</td><td>7.66</td><td>30</td><td>64%</td><td>1510</td><td><b>1510</b></td></tr><tr><td>6</td><td>Kuldeep Yadav</td><td>634</td><td>50</td><td>7.64</td><td>8.20</td><td>50</td><td>63%</td><td>1500</td><td><b>1509</b></td></tr><tr><td>7</td><td>Mustafizur Rahman</td><td>533</td><td>57</td><td>7.76</td><td>7.83</td><td>37</td><td>54%</td><td>1515</td><td><b>1509</b></td></tr><tr><td>8</td><td>Varun Chakravarthy</td><td>724</td><td>61</td><td>7.38</td><td>8.34</td><td>52</td><td>61%</td><td>1509</td><td><b>1508</b></td></tr><tr><td>9</td><td>Taskin Ahmed</td><td>246</td><td>30</td><td>7.61</td><td>8.08</td><td>28</td><td>59%</td><td>1499</td><td><b>1508</b></td></tr><tr><td>10</td><td>Akeal Hosein</td><td>210</td><td>27</td><td>5.91</td><td>8.01</td><td>12</td><td>66%</td><td>1501</td><td><b>1508</b></td></tr></tbody></table>
+<p class="note">*Share of matches (3+ pressure balls) where his pressure balls were worth more than average, pulled towards 50% when there are few matches.</p>
+<div class="fig"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="455.754062pt" height="208.946914pt" viewBox="0 0 455.754062 208.946914" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-17T21:56:07.078686</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 208.946914 
+L 455.754062 208.946914 
+L 455.754062 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 91.434062 173.52 
+L 448.554063 173.52 
+L 448.554063 7.2 
+L 91.434062 7.2 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 124.141965 173.52 
+L 124.141965 7.2 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #e6e6e6; stroke-linecap: square"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_2">
+      <defs>
+       <path id="m70120a45bc" d="M 0 0 
+L 0 3.5 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m70120a45bc" x="124.141965" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="124.141965" y="187.072246" transform="rotate(-0 124.141965 187.072246)">1500.0</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m70120a45bc" x="165.198407" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="165.198407" y="187.072246" transform="rotate(-0 165.198407 187.072246)">1502.5</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m70120a45bc" x="206.254849" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="206.254849" y="187.072246" transform="rotate(-0 206.254849 187.072246)">1505.0</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m70120a45bc" x="247.311291" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="247.311291" y="187.072246" transform="rotate(-0 247.311291 187.072246)">1507.5</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m70120a45bc" x="288.367733" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="288.367733" y="187.072246" transform="rotate(-0 288.367733 187.072246)">1510.0</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m70120a45bc" x="329.424175" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="329.424175" y="187.072246" transform="rotate(-0 329.424175 187.072246)">1512.5</text>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m70120a45bc" x="370.480617" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="370.480617" y="187.072246" transform="rotate(-0 370.480617 187.072246)">1515.0</text>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m70120a45bc" x="411.537059" y="173.52" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="411.537059" y="187.072246" transform="rotate(-0 411.537059 187.072246)">1517.5</text>
+     </g>
+    </g>
+    <g id="text_9">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: middle; fill: #1a1a1a" x="269.994063" y="199.629102" transform="rotate(-0 269.994063 199.629102)">Bowling Elo</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_10">
+      <defs>
+       <path id="m7b54faf4d3" d="M 0 0 
+L -3.5 0 
+" style="stroke: #1a1a1a; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="165.96" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="169.291406" transform="rotate(-0 84.434062 169.291406)">Akeal Hosein</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="149.16" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="152.491406" transform="rotate(-0 84.434062 152.491406)">Taskin Ahmed</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="132.36" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="135.691406" transform="rotate(-0 84.434062 135.691406)">Varun Chakravarthy</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_13">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="115.56" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="118.939219" transform="rotate(-0 84.434062 118.939219)">Mustafizur Rahman</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="98.76" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="102.091406" transform="rotate(-0 84.434062 102.091406)">Kuldeep Yadav</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_15">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="81.96" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="85.291406" transform="rotate(-0 84.434062 85.291406)">Mitchell Santner</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="65.16" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="68.539219" transform="rotate(-0 84.434062 68.539219)">Jofra Archer</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_17">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="48.36" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="51.691406" transform="rotate(-0 84.434062 51.691406)">Jasprit Bumrah</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="31.56" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_18">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="34.891406" transform="rotate(-0 84.434062 34.891406)">Rashid Khan</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_19">
+      <g>
+       <use xlink:href="#m7b54faf4d3" x="91.434062" y="14.76" style="fill: #1a1a1a; stroke: #1a1a1a; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_19">
+      <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: end; fill: #1a1a1a" x="84.434062" y="18.091406" transform="rotate(-0 84.434062 18.091406)">Sunil Narine</text>
+     </g>
+    </g>
+   </g>
+   <g id="LineCollection_1">
+    <path d="M 133.436761 165.96 
+L 254.631206 165.96 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 107.66679 149.16 
+L 255.278221 149.16 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 271.037853 132.36 
+L 263.083483 132.36 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 367.716918 115.56 
+L 269.918556 115.56 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 125.624503 98.76 
+L 275.088782 98.76 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 285.36706 81.96 
+L 285.579883 81.96 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 189.48781 65.16 
+L 290.829256 65.16 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 342.653874 48.36 
+L 299.270738 48.36 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 226.874539 31.56 
+L 336.857488 31.56 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+    <path d="M 384.918568 14.76 
+L 432.321335 14.76 
+" clip-path="url(#pa1230d8199)" style="fill: none; stroke: #d9d9d9; stroke-width: 3"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 91.434062 173.52 
+L 91.434062 7.2 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 91.434062 173.52 
+L 448.554062 173.52 
+" style="fill: none; stroke: #9a9a9a; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="mfbfd0c68ed" d="M 0 2.645751 
+C 0.701661 2.645751 1.374679 2.366978 1.870829 1.870829 
+C 2.366978 1.374679 2.645751 0.701661 2.645751 0 
+C 2.645751 -0.701661 2.366978 -1.374679 1.870829 -1.870829 
+C 1.374679 -2.366978 0.701661 -2.645751 0 -2.645751 
+C -0.701661 -2.645751 -1.374679 -2.366978 -1.870829 -1.870829 
+C -2.366978 -1.374679 -2.645751 -0.701661 -2.645751 0 
+C -2.645751 0.701661 -2.366978 1.374679 -1.870829 1.870829 
+C -1.374679 2.366978 -0.701661 2.645751 0 2.645751 
+z
+" style="stroke: #9a9a9a"/>
+    </defs>
+    <g clip-path="url(#pa1230d8199)">
+     <use xlink:href="#mfbfd0c68ed" x="133.436761" y="165.96" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="107.66679" y="149.16" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="271.037853" y="132.36" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="367.716918" y="115.56" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="125.624503" y="98.76" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="285.36706" y="81.96" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="189.48781" y="65.16" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="342.653874" y="48.36" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="226.874539" y="31.56" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     <use xlink:href="#mfbfd0c68ed" x="384.918568" y="14.76" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="mf155dd5f82" d="M 0 2.645751 
+C 0.701661 2.645751 1.374679 2.366978 1.870829 1.870829 
+C 2.366978 1.374679 2.645751 0.701661 2.645751 0 
+C 2.645751 -0.701661 2.366978 -1.374679 1.870829 -1.870829 
+C 1.374679 -2.366978 0.701661 -2.645751 0 -2.645751 
+C -0.701661 -2.645751 -1.374679 -2.366978 -1.870829 -1.870829 
+C -2.366978 -1.374679 -2.645751 -0.701661 -2.645751 0 
+C -2.645751 0.701661 -2.366978 1.374679 -1.870829 1.870829 
+C -1.374679 2.366978 -0.701661 2.645751 0 2.645751 
+z
+" style="stroke: #c2185b"/>
+    </defs>
+    <g clip-path="url(#pa1230d8199)">
+     <use xlink:href="#mf155dd5f82" x="254.631206" y="165.96" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="255.278221" y="149.16" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="263.083483" y="132.36" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="269.918556" y="115.56" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="275.088782" y="98.76" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="285.579883" y="81.96" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="290.829256" y="65.16" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="299.270738" y="48.36" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="336.857488" y="31.56" style="fill: #c2185b; stroke: #c2185b"/>
+     <use xlink:href="#mf155dd5f82" x="432.321335" y="14.76" style="fill: #c2185b; stroke: #c2185b"/>
+    </g>
+   </g>
+   <g id="legend_1">
+    <g id="PathCollection_3">
+     <g>
+      <use xlink:href="#mfbfd0c68ed" x="376.338906" y="148.106602" style="fill: #9a9a9a; stroke: #9a9a9a"/>
+     </g>
+    </g>
+    <g id="text_20">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="392.538906" y="150.469102" transform="rotate(-0 392.538906 150.469102)">Normal Elo</text>
+    </g>
+    <g id="PathCollection_4">
+     <g>
+      <use xlink:href="#mf155dd5f82" x="376.338906" y="161.163457" style="fill: #c2185b; stroke: #c2185b"/>
+     </g>
+    </g>
+    <g id="text_21">
+     <text style="font-size: 9px; font-family: 'Segoe UI'; text-anchor: start" x="392.538906" y="163.525957" transform="rotate(-0 392.538906 163.525957)">Pressure Elo</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa1230d8199">
+   <rect x="91.434062" y="7.2" width="357.12" height="166.32"/>
+  </clipPath>
+ </defs>
+</svg>
+</div>
+<p>Six of the ten are spinners. Narine is clear at the top. Bumrah, Mustafizur and Varun Chakravarthy are here for their
+level, not a jump: their normal Elo is a little higher, and Santner's is the same. Archer and Taskin Ahmed are the seamers
+whose Elo rises under pressure.</p>
+
+<h2 class="page">5. Player profiles</h2>
+<p>Why each player is on the list. Each profile compares his high-pressure balls with his normal balls, and the "Rank of"
+column places his high-pressure figure among every qualified player (97 batters, 112 bowlers). Rank 1 is
+best; for a batter's dot balls, and a bowler's economy, balls per wicket and boundary balls, the lowest number ranks
+first. "Place in the order" gives his pressure-Elo gap to the players either side, which is what sets his rank; for the
+10th player it is the margin over the first player left out. The profile also splits the
+pressure balls by situation, shows every year with at least 20 pressure balls, and names his best pressure match.
+"Runs above average" (batters) and "runs saved" (bowlers) are the ball values from section 2, per 100 balls. Roles follow
+simple rules on the data: a batter is a finisher if he usually bats at 6 or lower or takes 45% or more of his pressure
+balls in overs 16-20; a bowler is a death bowler if half or more of his pressure balls are in overs 16-20.</p>
+<h2 class="group">Batters</h2>
+<div class="card"><h3>1. Tim David</h3>
+<p class="meta">Finisher · Last IPL side: Royal Challengers Bengaluru (2026) · Pressure Elo 1527 (normal 1522) · 60 matches · 69% good matches</p>
+<p>The highest pressure Elo in the data, and he gets there without needing a lift: his strike rate is 178 in both columns. What changes is the value. Under pressure he gets out less often (every 21 balls against 19) and his runs are worth 47 above average per 100 balls, against 30 normally. He is at his most dangerous at the death (203 in overs 16-20) and against pace (190), and every year from 2022 to 2026 is positive.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>594</td><td>632</td><td>4</td></tr><tr><td>Runs</td><td>1,055</td><td>1,123</td><td>2</td></tr><tr><td>Strike rate</td><td>177.6</td><td>177.7</td><td>6</td></tr><tr><td>Balls per dismissal</td><td>21.2</td><td>18.6</td><td>13</td></tr><tr><td>Dot balls</td><td>32%</td><td>30%</td><td>35</td></tr><tr><td>Boundary balls</td><td>25%</td><td>25%</td><td>7</td></tr><tr><td>Runs above average per 100 balls</td><td>+47</td><td>+30</td><td>6</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>222</td><td>193</td></tr><tr><td>Batting first</td><td>372</td><td>169</td></tr><tr><td>Overs 16-20</td><td>321</td><td>203</td></tr><tr><td>Overs 1-15</td><td>273</td><td>148</td></tr><tr><td>IPL</td><td>364</td><td>183</td></tr><tr><td>T20I</td><td>230</td><td>169</td></tr><tr><td>v pace</td><td>418</td><td>190</td></tr><tr><td>v spin</td><td>176</td><td>148</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 2.45 above #2 Namboori Tilak Varma.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +76 (94 balls) · 2023: +29 (141 balls) · 2024: +15 (161 balls) · 2025: +76 (145 balls) · 2026: +66 (53 balls)</p>
+<p class="small"><b>Best pressure match:</b> 50 off 26 pressure balls against Punjab Kings, IPL 2025, 18 Apr 2025.</p></div><div class="card"><h3>2. Namboori Tilak Varma</h3>
+<p class="meta">Middle order, chases · Last IPL side: Mumbai Indians (2026) · Pressure Elo 1524 (normal 1503) · 63 matches · 58% good matches</p>
+<p>The biggest jump between normal and pressure in the top ten, 21 Elo points. On normal balls he is an average scorer (135, +1 per 100 balls). Under pressure he scores at 164 with more boundaries and fewer dots, worth +38 per 100 balls. Most of that work is in chases (432 of 689 balls), every year is positive, and 2026 is his biggest sample yet.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>689</td><td>1,826</td><td>2</td></tr><tr><td>Runs</td><td>1,133</td><td>2,463</td><td>1</td></tr><tr><td>Strike rate</td><td>164.4</td><td>134.9</td><td>21</td></tr><tr><td>Balls per dismissal</td><td>25.5</td><td>30.4</td><td>2</td></tr><tr><td>Dot balls</td><td>28%</td><td>33%</td><td>17</td></tr><tr><td>Boundary balls</td><td>21%</td><td>16%</td><td>28</td></tr><tr><td>Runs above average per 100 balls</td><td>+38</td><td>+1</td><td>12</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>432</td><td>169</td></tr><tr><td>Batting first</td><td>257</td><td>157</td></tr><tr><td>Overs 16-20</td><td>230</td><td>206</td></tr><tr><td>Overs 1-15</td><td>459</td><td>144</td></tr><tr><td>IPL</td><td>468</td><td>157</td></tr><tr><td>T20I</td><td>221</td><td>181</td></tr><tr><td>v pace</td><td>402</td><td>182</td></tr><tr><td>v spin</td><td>287</td><td>140</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 2.45 Elo below #1 Tim David, 3.80 above #3 Suryakumar Yadav.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +27 (88 balls) · 2023: +59 (99 balls) · 2024: +40 (131 balls) · 2025: +33 (137 balls) · 2026: +36 (234 balls)</p>
+<p class="small"><b>Best pressure match:</b> 64 off 28 pressure balls against Punjab Kings, IPL 2026, 14 May 2026.</p></div><div class="card"><h3>3. Suryakumar Yadav</h3>
+<p class="meta">Middle order, chases · Last IPL side: Mumbai Indians (2026) · Pressure Elo 1520 (normal 1515) · 36 matches · 65% good matches</p>
+<p>The highest strike rate under pressure in the top ten (187) and the most value per ball (+53 per 100). He gets out at the same rate either way, about once every 23 balls, so the extra speed costs nothing. The concern is the trend: his pressure value has dropped every year, from +86 in 2022 to +2 in 2026, so the rating leans on his older seasons.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>493</td><td>2,266</td><td>14</td></tr><tr><td>Runs</td><td>922</td><td>3,666</td><td>5</td></tr><tr><td>Strike rate</td><td>187.0</td><td>161.8</td><td>4</td></tr><tr><td>Balls per dismissal</td><td>23.5</td><td>23.6</td><td>8</td></tr><tr><td>Dot balls</td><td>29%</td><td>33%</td><td>23</td></tr><tr><td>Boundary balls</td><td>29%</td><td>24%</td><td>2</td></tr><tr><td>Runs above average per 100 balls</td><td>+53</td><td>+23</td><td>2</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>386</td><td>178</td></tr><tr><td>Batting first</td><td>107</td><td>220</td></tr><tr><td>Overs 16-20</td><td>135</td><td>207</td></tr><tr><td>Overs 1-15</td><td>358</td><td>179</td></tr><tr><td>IPL</td><td>372</td><td>179</td></tr><tr><td>T20I</td><td>121</td><td>212</td></tr><tr><td>v pace</td><td>290</td><td>202</td></tr><tr><td>v spin</td><td>203</td><td>166</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 3.80 Elo below #2 Namboori Tilak Varma, 1.25 above #4 Shivam Dube.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +86 (135 balls) · 2023: +64 (180 balls) · 2024: +41 (27 balls) · 2025: +24 (67 balls) · 2026: +2 (84 balls)</p>
+<p class="small"><b>Best pressure match:</b> 103 off 46 pressure balls against England, India in England T20I Series 2022, 10 Jul 2022.</p></div><div class="card"><h3>4. Shivam Dube</h3>
+<p class="meta">Middle order · Last IPL side: Chennai Super Kings (2026) · Pressure Elo 1519 (normal 1501) · 54 matches · 63% good matches</p>
+<p>Faster and harder to dismiss under pressure: 163 against 149, and out every 24 balls against 22. Unusually for a big hitter he scores as well against spin (166) as against pace (162), which is what the middle overs of a chase need. 2026 was his best pressure year, +59 per 100 balls over 164 balls.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>551</td><td>993</td><td>8</td></tr><tr><td>Runs</td><td>900</td><td>1,480</td><td>7</td></tr><tr><td>Strike rate</td><td>163.3</td><td>149.0</td><td>24</td></tr><tr><td>Balls per dismissal</td><td>24.0</td><td>21.6</td><td>6</td></tr><tr><td>Dot balls</td><td>28%</td><td>34%</td><td>18</td></tr><tr><td>Boundary balls</td><td>22%</td><td>19%</td><td>24</td></tr><tr><td>Runs above average per 100 balls</td><td>+33</td><td>+3</td><td>13</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>295</td><td>165</td></tr><tr><td>Batting first</td><td>256</td><td>161</td></tr><tr><td>Overs 16-20</td><td>199</td><td>182</td></tr><tr><td>Overs 1-15</td><td>352</td><td>153</td></tr><tr><td>IPL</td><td>398</td><td>155</td></tr><tr><td>T20I</td><td>153</td><td>185</td></tr><tr><td>v pace</td><td>383</td><td>162</td></tr><tr><td>v spin</td><td>168</td><td>165</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 1.25 Elo below #3 Suryakumar Yadav, 0.13 above #5 Shashank Singh.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +22 (56 balls) · 2023: +44 (79 balls) · 2024: +1 (71 balls) · 2025: +21 (181 balls) · 2026: +59 (164 balls)</p>
+<p class="small"><b>Best pressure match:</b> 65 off 23 pressure balls against New Zealand, New Zealand in India T20I Series 2026, 28 Jan 2026.</p></div><div class="card"><h3>5. Shashank Singh</h3>
+<p class="meta">Finisher · Last IPL side: Punjab Kings (2026) · Pressure Elo 1519 (normal 1500) · 30 matches · 64% good matches</p>
+<p>The sharpest change on the list. On normal balls he is below average (-17 per 100); under pressure he is +53, strikes at 174 and is dismissed only once every 38 balls, against every 15 normally. All of it comes in the IPL, and he is strongest at the death, 214 in overs 16-20. The sample is small (339 balls), but every year points the same way.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>339</td><td>221</td><td>23</td></tr><tr><td>Runs</td><td>591</td><td>314</td><td>19</td></tr><tr><td>Strike rate</td><td>174.3</td><td>142.1</td><td>9</td></tr><tr><td>Balls per dismissal</td><td>37.7</td><td>14.7</td><td>1</td></tr><tr><td>Dot balls</td><td>25%</td><td>32%</td><td>5</td></tr><tr><td>Boundary balls</td><td>23%</td><td>18%</td><td>15</td></tr><tr><td>Runs above average per 100 balls</td><td>+53</td><td>-17</td><td>3</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>185</td><td>181</td></tr><tr><td>Batting first</td><td>154</td><td>167</td></tr><tr><td>Overs 16-20</td><td>139</td><td>214</td></tr><tr><td>Overs 1-15</td><td>200</td><td>147</td></tr><tr><td>IPL</td><td>339</td><td>174</td></tr><tr><td>v pace</td><td>180</td><td>192</td></tr><tr><td>v spin</td><td>159</td><td>154</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.13 Elo below #4 Shivam Dube, 1.46 above #6 Heinrich Klaasen.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +46 (33 balls) · 2024: +68 (134 balls) · 2025: +42 (142 balls) · 2026: +43 (30 balls)</p>
+<p class="small"><b>Best pressure match:</b> 52 off 21 pressure balls against Kolkata Knight Riders, IPL 2024, 26 Apr 2024.</p></div><div class="card"><h3>6. Heinrich Klaasen</h3>
+<p class="meta">Middle order · Last IPL side: Sunrisers Hyderabad (2026) · Pressure Elo 1517 (normal 1518) · 41 matches · 74% good matches</p>
+<p>Picked for consistency rather than lift. His pressure value (+32 per 100 balls) is close to his normal value (+27), and 74% of his pressure matches were above average, the best record among these ten batters. He is better setting a total (171) than chasing (156) and scores at 204 at the death. The cost is his wicket: under pressure he goes every 20 balls instead of every 27.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>498</td><td>919</td><td>10</td></tr><tr><td>Runs</td><td>814</td><td>1,549</td><td>11</td></tr><tr><td>Strike rate</td><td>163.5</td><td>168.6</td><td>23</td></tr><tr><td>Balls per dismissal</td><td>19.9</td><td>27.0</td><td>23</td></tr><tr><td>Dot balls</td><td>25%</td><td>26%</td><td>6</td></tr><tr><td>Boundary balls</td><td>21%</td><td>22%</td><td>34</td></tr><tr><td>Runs above average per 100 balls</td><td>+32</td><td>+27</td><td>15</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>240</td><td>156</td></tr><tr><td>Batting first</td><td>258</td><td>171</td></tr><tr><td>Overs 16-20</td><td>145</td><td>204</td></tr><tr><td>Overs 1-15</td><td>353</td><td>147</td></tr><tr><td>IPL</td><td>427</td><td>166</td></tr><tr><td>T20I</td><td>71</td><td>148</td></tr><tr><td>v pace</td><td>261</td><td>158</td></tr><tr><td>v spin</td><td>237</td><td>169</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 1.46 Elo below #5 Shashank Singh, 0.10 above #7 Shreyas Iyer.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +8 (36 balls) · 2023: +26 (146 balls) · 2024: +41 (149 balls) · 2025: +41 (102 balls) · 2026: +22 (65 balls)</p>
+<p class="small"><b>Best pressure match:</b> 71 off 41 pressure balls against Mumbai Indians, IPL 2025, 23 Apr 2025.</p></div><div class="card"><h3>7. Shreyas Iyer</h3>
+<p class="meta">Middle order · Last IPL side: Punjab Kings (2026) · Pressure Elo 1517 (normal 1519) · 27 matches · 62% good matches</p>
+<p>A chaser. Under pressure in chases he scores at 187, and at 223 in overs 16-20. His value rises from +9 per 100 balls normally to +43 under pressure. Two things hold him back: the smallest sample in the top ten (303 balls in 27 matches), and he is dismissed a little more often under pressure (every 20 balls against 25).</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>303</td><td>1,562</td><td>28</td></tr><tr><td>Runs</td><td>525</td><td>2,331</td><td>20</td></tr><tr><td>Strike rate</td><td>173.3</td><td>149.2</td><td>10</td></tr><tr><td>Balls per dismissal</td><td>20.2</td><td>24.8</td><td>19</td></tr><tr><td>Dot balls</td><td>24%</td><td>30%</td><td>3</td></tr><tr><td>Boundary balls</td><td>22%</td><td>19%</td><td>19</td></tr><tr><td>Runs above average per 100 balls</td><td>+43</td><td>+9</td><td>9</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>179</td><td>187</td></tr><tr><td>Batting first</td><td>124</td><td>154</td></tr><tr><td>Overs 16-20</td><td>96</td><td>223</td></tr><tr><td>Overs 1-15</td><td>207</td><td>150</td></tr><tr><td>IPL</td><td>186</td><td>177</td></tr><tr><td>T20I</td><td>117</td><td>168</td></tr><tr><td>v pace</td><td>188</td><td>178</td></tr><tr><td>v spin</td><td>115</td><td>165</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.10 Elo below #6 Heinrich Klaasen, 0.60 above #8 Marcus Stoinis.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +11 (75 balls) · 2023: +59 (20 balls) · 2024: +3 (53 balls) · 2025: +135 (48 balls) · 2026: +42 (107 balls)</p>
+<p class="small"><b>Best pressure match:</b> 66 off 29 pressure balls against Mumbai Indians, IPL 2025, 1 Jun 2025.</p></div><div class="card"><h3>8. Marcus Stoinis</h3>
+<p class="meta">Middle order, chases · Last IPL side: Punjab Kings (2026) · Pressure Elo 1517 (normal 1505) · 45 matches · 60% good matches</p>
+<p>Turns a below-average normal record (-3 per 100 balls) into +31 under pressure, mainly by cutting dot balls from 37% to 30%. He is far better setting a total (193) than chasing (155), and far better against pace (187) than spin (141). Every year is positive, with 2024 and 2025 the strongest.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>464</td><td>783</td><td>15</td></tr><tr><td>Runs</td><td>780</td><td>1,135</td><td>13</td></tr><tr><td>Strike rate</td><td>168.1</td><td>145.0</td><td>15</td></tr><tr><td>Balls per dismissal</td><td>18.6</td><td>20.6</td><td>30</td></tr><tr><td>Dot balls</td><td>30%</td><td>37%</td><td>26</td></tr><tr><td>Boundary balls</td><td>23%</td><td>20%</td><td>14</td></tr><tr><td>Runs above average per 100 balls</td><td>+31</td><td>-3</td><td>18</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>300</td><td>155</td></tr><tr><td>Batting first</td><td>164</td><td>193</td></tr><tr><td>Overs 16-20</td><td>167</td><td>203</td></tr><tr><td>Overs 1-15</td><td>297</td><td>148</td></tr><tr><td>IPL</td><td>326</td><td>176</td></tr><tr><td>T20I</td><td>138</td><td>149</td></tr><tr><td>v pace</td><td>274</td><td>187</td></tr><tr><td>v spin</td><td>190</td><td>141</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.60 Elo below #7 Shreyas Iyer, 1.51 above #9 Azmatullah Omarzai.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +19 (73 balls) · 2023: +12 (126 balls) · 2024: +68 (62 balls) · 2025: +52 (98 balls) · 2026: +20 (105 balls)</p>
+<p class="small"><b>Best pressure match:</b> 83 off 41 pressure balls against Chennai Super Kings, IPL 2024, 23 Apr 2024.</p></div><div class="card"><h3>9. Azmatullah Omarzai</h3>
+<p class="meta">Finisher · Last IPL side: Punjab Kings (2026) · Pressure Elo 1515 (normal 1497) · 37 matches · 51% good matches</p>
+<p>Here on recent form. His pressure value was negative from 2022 to 2024, then +9 in 2025 and +86 in 2026, a year that includes 115 off 49 pressure balls against Zimbabwe. Almost all of his pressure balls are T20Is (306 of 358) and batting first; in chases he has only 54 balls at a strike rate of 109. He also has the weakest match-by-match record in the top ten (51% good matches). This pick backs the trend.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>358</td><td>307</td><td>19</td></tr><tr><td>Runs</td><td>509</td><td>404</td><td>24</td></tr><tr><td>Strike rate</td><td>142.2</td><td>131.6</td><td>57</td></tr><tr><td>Balls per dismissal</td><td>17.9</td><td>13.3</td><td>36</td></tr><tr><td>Dot balls</td><td>35%</td><td>36%</td><td>58</td></tr><tr><td>Boundary balls</td><td>17%</td><td>15%</td><td>59</td></tr><tr><td>Runs above average per 100 balls</td><td>+22</td><td>-22</td><td>28</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>54</td><td>109</td></tr><tr><td>Batting first</td><td>304</td><td>148</td></tr><tr><td>Overs 16-20</td><td>116</td><td>188</td></tr><tr><td>Overs 1-15</td><td>242</td><td>120</td></tr><tr><td>IPL</td><td>52</td><td>158</td></tr><tr><td>T20I</td><td>306</td><td>140</td></tr><tr><td>v pace</td><td>190</td><td>153</td></tr><tr><td>v spin</td><td>168</td><td>130</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 1.51 Elo below #8 Marcus Stoinis, 0.07 above #10 Romario Shepherd.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: -39 (69 balls) · 2023: -6 (35 balls) · 2024: -102 (24 balls) · 2025: +9 (87 balls) · 2026: +86 (143 balls)</p>
+<p class="small"><b>Best pressure match:</b> 115 off 49 pressure balls against Zimbabwe, Afghanistan v Zimbabwe T20I Series 2026, 29 Oct 2026.</p></div><div class="card"><h3>10. Romario Shepherd</h3>
+<p class="meta">Finisher · Last IPL side: Royal Challengers Bengaluru (2026) · Pressure Elo 1515 (normal 1501) · 58 matches · 58% good matches</p>
+<p>A death hitter: 267 of his 497 pressure balls come in overs 16-20, at 175. Normally he is dismissed every 12 balls; under pressure every 21, and that alone moves his value from -9 to +29 per 100 balls. 2026 was his first negative pressure year (-10 over 70 balls), and he is only half an Elo point ahead of Jos Buttler in 11th.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 97</th></tr></thead><tbody><tr><td>Balls</td><td>497</td><td>190</td><td>11</td></tr><tr><td>Runs</td><td>763</td><td>296</td><td>14</td></tr><tr><td>Strike rate</td><td>153.5</td><td>155.8</td><td>37</td></tr><tr><td>Balls per dismissal</td><td>20.7</td><td>11.9</td><td>15</td></tr><tr><td>Dot balls</td><td>39%</td><td>38%</td><td>82</td></tr><tr><td>Boundary balls</td><td>21%</td><td>21%</td><td>29</td></tr><tr><td>Runs above average per 100 balls</td><td>+29</td><td>-9</td><td>21</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Strike rate</th></tr></thead><tbody><tr><td>Chasing</td><td>206</td><td>133</td></tr><tr><td>Batting first</td><td>291</td><td>168</td></tr><tr><td>Overs 16-20</td><td>267</td><td>175</td></tr><tr><td>Overs 1-15</td><td>230</td><td>128</td></tr><tr><td>IPL</td><td>101</td><td>171</td></tr><tr><td>T20I</td><td>396</td><td>149</td></tr><tr><td>v pace</td><td>322</td><td>158</td></tr><tr><td>v spin</td><td>175</td><td>145</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.07 Elo below #9 Azmatullah Omarzai, 0.46 above #11 Jos Buttler.</p>
+<p class="small"><b>By year</b>, runs above average per 100 pressure balls: 2022: +14 (71 balls) · 2023: +51 (40 balls) · 2024: +30 (145 balls) · 2025: +45 (171 balls) · 2026: -10 (70 balls)</p>
+<p class="small"><b>Best pressure match:</b> 33 off 7 pressure balls against Delhi Capitals, IPL 2024, 7 Apr 2024.</p></div>
+<h2 class="group page">Bowlers</h2>
+<div class="card"><h3>1. Sunil Narine</h3>
+<p class="meta">Middle overs · Last IPL side: Kolkata Knight Riders (2026) · Pressure Elo 1519 (normal 1516) · 31 matches · 72% good matches</p>
+<p>Clear first. Under pressure he concedes 5.6 an over against 7.3 normally, takes a wicket every 17 balls instead of 28, and 43% of his pressure balls are dots. 72% of his pressure matches were above average, the best of these ten bowlers, and every year is positive, with 2025 and 2026 the strongest. Left-handers find him hardest: 4.9 an over.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>392</td><td>1,138</td><td>24</td></tr><tr><td>Wickets</td><td>23</td><td>41</td><td>26</td></tr><tr><td>Economy</td><td>5.6</td><td>7.3</td><td>1</td></tr><tr><td>Balls per wicket</td><td>17.0</td><td>27.8</td><td>67</td></tr><tr><td>Dot balls</td><td>43%</td><td>36%</td><td>6</td></tr><tr><td>Boundary balls</td><td>8%</td><td>12%</td><td>2</td></tr><tr><td>Runs saved per 100 balls</td><td>+42</td><td>+20</td><td>2</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>190</td><td>6.2</td></tr><tr><td>Bowling first</td><td>202</td><td>5.1</td></tr><tr><td>Overs 16-20</td><td>82</td><td>5.6</td></tr><tr><td>Overs 1-15</td><td>310</td><td>5.7</td></tr><tr><td>IPL</td><td>392</td><td>5.6</td></tr><tr><td>v right-handers</td><td>261</td><td>6.0</td></tr><tr><td>v left-handers</td><td>131</td><td>4.9</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 5.81 above #2 Rashid Khan.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +36 (46 balls) · 2023: +12 (52 balls) · 2024: +33 (143 balls) · 2025: +66 (87 balls) · 2026: +61 (64 balls)</p>
+<p class="small"><b>Best pressure match:</b> 2 for 4 in 9 pressure balls against Delhi Capitals, IPL 2025, 29 Apr 2025.</p></div><div class="card"><h3>2. Rashid Khan</h3>
+<p class="meta">Middle overs · Last IPL side: Gujarat Titans (2026) · Pressure Elo 1513 (normal 1506) · 71 matches · 65% good matches</p>
+<p>The biggest pressure workload in the data: 831 balls in 71 matches and 64 wickets. His economy does not move (7.4 either way) but his wicket rate does, one every 13 balls under pressure against 22. The caveat is where he does it: 5.7 an over in T20Is, 8.6 in the IPL.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>831</td><td>1,916</td><td>1</td></tr><tr><td>Wickets</td><td>64</td><td>89</td><td>1</td></tr><tr><td>Economy</td><td>7.4</td><td>7.4</td><td>11</td></tr><tr><td>Balls per wicket</td><td>13.0</td><td>21.5</td><td>32</td></tr><tr><td>Dot balls</td><td>38%</td><td>35%</td><td>32</td></tr><tr><td>Boundary balls</td><td>13%</td><td>13%</td><td>12</td></tr><tr><td>Runs saved per 100 balls</td><td>+24</td><td>+16</td><td>15</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>448</td><td>7.7</td></tr><tr><td>Bowling first</td><td>383</td><td>7.0</td></tr><tr><td>Overs 16-20</td><td>277</td><td>7.6</td></tr><tr><td>Overs 1-15</td><td>554</td><td>7.3</td></tr><tr><td>IPL</td><td>489</td><td>8.6</td></tr><tr><td>T20I</td><td>342</td><td>5.7</td></tr><tr><td>v right-handers</td><td>581</td><td>7.7</td></tr><tr><td>v left-handers</td><td>250</td><td>6.7</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 5.81 Elo below #1 Sunil Narine, 2.29 above #3 Jasprit Bumrah.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +33 (163 balls) · 2023: +10 (238 balls) · 2024: +54 (106 balls) · 2025: -8 (141 balls) · 2026: +39 (183 balls)</p>
+<p class="small"><b>Best pressure match:</b> 4 for 11 in 12 pressure balls against Zimbabwe, Afghanistan in Zimbabwe T20I Series 2024, 12 Dec 2024.</p></div><div class="card"><h3>3. Jasprit Bumrah</h3>
+<p class="meta">Death overs · Last IPL side: Mumbai Indians (2026) · Pressure Elo 1511 (normal 1513) · 60 matches · 54% good matches</p>
+<p>Here for level, not lift. His normal record (+30 runs saved per 100 balls) is the best of these ten, and he stays close to it under pressure (+28), mostly at the death: 323 of his 509 pressure balls are in overs 16-20. He concedes slightly more under pressure (7.5 against 7.2) but takes a wicket every 15 balls against 24. 2026 was below average (-7).</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>509</td><td>1,200</td><td>12</td></tr><tr><td>Wickets</td><td>34</td><td>51</td><td>12</td></tr><tr><td>Economy</td><td>7.5</td><td>7.2</td><td>13</td></tr><tr><td>Balls per wicket</td><td>15.0</td><td>23.5</td><td>53</td></tr><tr><td>Dot balls</td><td>39%</td><td>48%</td><td>27</td></tr><tr><td>Boundary balls</td><td>15%</td><td>15%</td><td>26</td></tr><tr><td>Runs saved per 100 balls</td><td>+27</td><td>+30</td><td>9</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>212</td><td>6.9</td></tr><tr><td>Bowling first</td><td>297</td><td>8.0</td></tr><tr><td>Overs 16-20</td><td>323</td><td>7.9</td></tr><tr><td>Overs 1-15</td><td>186</td><td>6.8</td></tr><tr><td>IPL</td><td>329</td><td>7.2</td></tr><tr><td>T20I</td><td>180</td><td>8.0</td></tr><tr><td>v right-handers</td><td>358</td><td>8.0</td></tr><tr><td>v left-handers</td><td>151</td><td>6.4</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 2.29 Elo below #2 Rashid Khan, 0.51 above #4 Jofra Archer.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +2 (115 balls) · 2023: +30 (23 balls) · 2024: +68 (88 balls) · 2025: +51 (156 balls) · 2026: -7 (127 balls)</p>
+<p class="small"><b>Best pressure match:</b> 2 for 2 in 12 pressure balls against Kolkata Knight Riders, IPL 2022, 9 May 2022.</p></div><div class="card"><h3>4. Jofra Archer</h3>
+<p class="meta">Already at RR: keep · Last IPL side: Rajasthan Royals (2026) · Pressure Elo 1510 (normal 1504) · 41 matches · 56% good matches</p>
+<p>Already at RR, so this is a case for keeping him. He is one of two seamers here who get better under pressure: 8.5 an over against 9.2, a wicket every 12 balls against 20, and +23 runs saved per 100 balls against -5. Two thirds of his pressure balls are at the death. His record in the data runs from 2024, and 2025 was a dip (-6).</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>282</td><td>979</td><td>36</td></tr><tr><td>Wickets</td><td>23</td><td>48</td><td>26</td></tr><tr><td>Economy</td><td>8.5</td><td>9.2</td><td>45</td></tr><tr><td>Balls per wicket</td><td>12.3</td><td>20.4</td><td>22</td></tr><tr><td>Dot balls</td><td>42%</td><td>43%</td><td>11</td></tr><tr><td>Boundary balls</td><td>20%</td><td>23%</td><td>69</td></tr><tr><td>Runs saved per 100 balls</td><td>+23</td><td>-5</td><td>17</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>106</td><td>9.2</td></tr><tr><td>Bowling first</td><td>176</td><td>8.1</td></tr><tr><td>Overs 16-20</td><td>188</td><td>8.9</td></tr><tr><td>Overs 1-15</td><td>94</td><td>7.9</td></tr><tr><td>IPL</td><td>127</td><td>9.4</td></tr><tr><td>T20I</td><td>155</td><td>7.8</td></tr><tr><td>v right-handers</td><td>150</td><td>7.8</td></tr><tr><td>v left-handers</td><td>132</td><td>9.3</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.51 Elo below #3 Jasprit Bumrah, 0.32 above #5 Mitchell Santner.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2024: +32 (56 balls) · 2025: -6 (69 balls) · 2026: +43 (143 balls)</p>
+<p class="small"><b>Best pressure match:</b> 2 for 8 in 12 pressure balls against Sri Lanka, Sri Lanka in England T20I Series 2026, 19 Sep 2026.</p></div><div class="card"><h3>5. Mitchell Santner</h3>
+<p class="meta">Middle overs · Last IPL side: Mumbai Indians (2026) · Pressure Elo 1510 (normal 1510) · 42 matches · 64% good matches</p>
+<p>A middle-overs bowler. 366 of his 465 pressure balls come before the 16th over, at 6.1 an over, and he gives away fewer boundaries under pressure (11% against 15%). Overall he is better under pressure than normally (6.9 against 7.7). He should not bowl the death: 9.5 an over in overs 16-20.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>465</td><td>1,272</td><td>15</td></tr><tr><td>Wickets</td><td>30</td><td>57</td><td>15</td></tr><tr><td>Economy</td><td>6.9</td><td>7.7</td><td>4</td></tr><tr><td>Balls per wicket</td><td>15.5</td><td>22.3</td><td>54</td></tr><tr><td>Dot balls</td><td>39%</td><td>37%</td><td>24</td></tr><tr><td>Boundary balls</td><td>11%</td><td>15%</td><td>4</td></tr><tr><td>Runs saved per 100 balls</td><td>+25</td><td>+14</td><td>13</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>307</td><td>7.4</td></tr><tr><td>Bowling first</td><td>158</td><td>5.9</td></tr><tr><td>Overs 16-20</td><td>99</td><td>9.5</td></tr><tr><td>Overs 1-15</td><td>366</td><td>6.1</td></tr><tr><td>IPL</td><td>125</td><td>6.1</td></tr><tr><td>T20I</td><td>340</td><td>7.1</td></tr><tr><td>v right-handers</td><td>380</td><td>6.7</td></tr><tr><td>v left-handers</td><td>85</td><td>7.8</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.32 Elo below #4 Jofra Archer, 0.64 above #6 Kuldeep Yadav.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: -2 (66 balls) · 2023: +51 (75 balls) · 2024: +13 (74 balls) · 2025: +33 (150 balls) · 2026: +20 (100 balls)</p>
+<p class="small"><b>Best pressure match:</b> 3 for 6 in 14 pressure balls against Bangladesh, Bangladesh in New Zealand T20I Series 2023, 31 Dec 2023.</p></div><div class="card"><h3>6. Kuldeep Yadav</h3>
+<p class="meta">Middle overs · Last IPL side: Delhi Capitals (2026) · Pressure Elo 1509 (normal 1500) · 50 matches · 63% good matches</p>
+<p>A wicket-taker: 50 pressure wickets, one every 13 balls against 19 normally, and he concedes less under pressure (7.6 against 8.2). He is far better when his side bowls first (6.2) than when defending a total (9.0), and 2026 was a weak year (-23).</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>634</td><td>1,280</td><td>6</td></tr><tr><td>Wickets</td><td>50</td><td>68</td><td>4</td></tr><tr><td>Economy</td><td>7.6</td><td>8.2</td><td>16</td></tr><tr><td>Balls per wicket</td><td>12.7</td><td>18.8</td><td>27</td></tr><tr><td>Dot balls</td><td>37%</td><td>32%</td><td>43</td></tr><tr><td>Boundary balls</td><td>13%</td><td>15%</td><td>14</td></tr><tr><td>Runs saved per 100 balls</td><td>+25</td><td>+11</td><td>14</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>327</td><td>9.0</td></tr><tr><td>Bowling first</td><td>307</td><td>6.2</td></tr><tr><td>Overs 16-20</td><td>178</td><td>8.4</td></tr><tr><td>Overs 1-15</td><td>456</td><td>7.3</td></tr><tr><td>IPL</td><td>450</td><td>7.8</td></tr><tr><td>T20I</td><td>184</td><td>7.3</td></tr><tr><td>v right-handers</td><td>377</td><td>7.8</td></tr><tr><td>v left-handers</td><td>257</td><td>7.4</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.64 Elo below #5 Mitchell Santner, 0.31 above #7 Mustafizur Rahman.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +35 (125 balls) · 2023: +29 (132 balls) · 2024: -2 (139 balls) · 2025: +68 (146 balls) · 2026: -23 (92 balls)</p>
+<p class="small"><b>Best pressure match:</b> 5 for 17 in 17 pressure balls against South Africa, India in South Africa T20I Series 2023, 14 Dec 2023.</p></div><div class="card"><h3>7. Mustafizur Rahman</h3>
+<p class="meta">Death overs · Last IPL side: Delhi Capitals (2025) · Pressure Elo 1509 (normal 1515) · 57 matches · 54% good matches</p>
+<p>A death bowler: 396 of his 533 pressure balls are in overs 16-20. His economy is the same either way (7.8), but he takes a wicket every 14 balls under pressure against 25. Most of it is in T20Is (389 balls); in the IPL he has gone at 9.7 an over, and he has bowled almost no pressure balls in 2026.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>533</td><td>1,043</td><td>10</td></tr><tr><td>Wickets</td><td>37</td><td>42</td><td>10</td></tr><tr><td>Economy</td><td>7.8</td><td>7.8</td><td>22</td></tr><tr><td>Balls per wicket</td><td>14.4</td><td>24.8</td><td>49</td></tr><tr><td>Dot balls</td><td>42%</td><td>40%</td><td>13</td></tr><tr><td>Boundary balls</td><td>14%</td><td>17%</td><td>23</td></tr><tr><td>Runs saved per 100 balls</td><td>+17</td><td>+11</td><td>23</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>133</td><td>8.9</td></tr><tr><td>Bowling first</td><td>400</td><td>7.4</td></tr><tr><td>Overs 16-20</td><td>396</td><td>8.4</td></tr><tr><td>Overs 1-15</td><td>137</td><td>5.8</td></tr><tr><td>IPL</td><td>144</td><td>9.7</td></tr><tr><td>T20I</td><td>389</td><td>7.0</td></tr><tr><td>v right-handers</td><td>371</td><td>7.7</td></tr><tr><td>v left-handers</td><td>162</td><td>7.9</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.31 Elo below #6 Kuldeep Yadav, 0.42 above #8 Varun Chakravarthy.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +1 (127 balls) · 2023: +38 (85 balls) · 2024: -24 (96 balls) · 2025: +42 (216 balls)</p>
+<p class="small"><b>Best pressure match:</b> 3 for 11 in 12 pressure balls against Kolkata Knight Riders, IPL 2022, 28 Apr 2022.</p></div><div class="card"><h3>8. Varun Chakravarthy</h3>
+<p class="meta">Middle overs · Last IPL side: Kolkata Knight Riders (2026) · Pressure Elo 1508 (normal 1509) · 61 matches · 61% good matches</p>
+<p>After Rashid, the biggest pressure workload of any spinner here (724 balls, 52 wickets). He concedes less under pressure (7.4 against 8.3) and 43% of his pressure balls are dots. Very hard to score off when his side bowls first (5.7), expensive when defending (9.0), and 2026 was below average (-14).</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>724</td><td>1,404</td><td>4</td></tr><tr><td>Wickets</td><td>52</td><td>83</td><td>3</td></tr><tr><td>Economy</td><td>7.4</td><td>8.3</td><td>9</td></tr><tr><td>Balls per wicket</td><td>13.9</td><td>16.9</td><td>39</td></tr><tr><td>Dot balls</td><td>43%</td><td>38%</td><td>8</td></tr><tr><td>Boundary balls</td><td>14%</td><td>18%</td><td>17</td></tr><tr><td>Runs saved per 100 balls</td><td>+22</td><td>+17</td><td>18</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>374</td><td>9.0</td></tr><tr><td>Bowling first</td><td>350</td><td>5.7</td></tr><tr><td>Overs 16-20</td><td>161</td><td>7.3</td></tr><tr><td>Overs 1-15</td><td>563</td><td>7.4</td></tr><tr><td>IPL</td><td>416</td><td>7.3</td></tr><tr><td>T20I</td><td>308</td><td>7.5</td></tr><tr><td>v right-handers</td><td>518</td><td>7.6</td></tr><tr><td>v left-handers</td><td>206</td><td>6.8</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.42 Elo below #7 Mustafizur Rahman, 0.48 above #9 Taskin Ahmed.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +38 (45 balls) · 2023: +27 (64 balls) · 2024: +12 (213 balls) · 2025: +50 (246 balls) · 2026: -14 (156 balls)</p>
+<p class="small"><b>Best pressure match:</b> 2 for 11 in 24 pressure balls against South Africa, South Africa in India T20I Series 2025, 14 Dec 2025.</p></div><div class="card"><h3>9. Taskin Ahmed</h3>
+<p class="meta">Death overs · No IPL matches in the data · Pressure Elo 1508 (normal 1499) · 30 matches · 59% good matches</p>
+<p>The best wicket rate in the list: one every 8.8 balls under pressure, against 20 normally. That turns a below-average normal record (-1 runs saved per 100 balls) into +30 under pressure. All of it is in T20Is; he has no IPL matches in the data.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>246</td><td>795</td><td>46</td></tr><tr><td>Wickets</td><td>28</td><td>39</td><td>16</td></tr><tr><td>Economy</td><td>7.6</td><td>8.1</td><td>15</td></tr><tr><td>Balls per wicket</td><td>8.8</td><td>20.4</td><td>3</td></tr><tr><td>Dot balls</td><td>44%</td><td>45%</td><td>2</td></tr><tr><td>Boundary balls</td><td>15%</td><td>19%</td><td>30</td></tr><tr><td>Runs saved per 100 balls</td><td>+29</td><td>-1</td><td>8</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>88</td><td>7.9</td></tr><tr><td>Bowling first</td><td>158</td><td>7.4</td></tr><tr><td>Overs 16-20</td><td>153</td><td>7.8</td></tr><tr><td>Overs 1-15</td><td>93</td><td>7.2</td></tr><tr><td>T20I</td><td>246</td><td>7.6</td></tr><tr><td>v right-handers</td><td>169</td><td>8.0</td></tr><tr><td>v left-handers</td><td>77</td><td>6.8</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.48 Elo below #8 Varun Chakravarthy, 0.04 above #10 Akeal Hosein.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2023: +72 (36 balls) · 2024: +18 (88 balls) · 2025: +35 (87 balls)</p>
+<p class="small"><b>Best pressure match:</b> 3 for 11 in 18 pressure balls against Zimbabwe, Zimbabwe in Bangladesh T20I Series 2024, 3 May 2024.</p></div><div class="card"><h3>10. Akeal Hosein</h3>
+<p class="meta">Middle overs · Last IPL side: Chennai Super Kings (2026) · Pressure Elo 1508 (normal 1501) · 27 matches · 66% good matches</p>
+<p>The tightest bowler here after Narine: 5.9 an over under pressure against 8.0 normally, and only 7% of his pressure balls go for four or six (17% normally). Almost all of his pressure overs come before the 16th. The weakness is wickets, 12 in 210 balls, and his sample is the smallest of the ten bowlers.</p>
+<div class="two"><table><thead><tr><th></th><th>Under pressure</th><th>Normal</th><th>Rank of 112</th></tr></thead><tbody><tr><td>Balls</td><td>210</td><td>1,483</td><td>62</td></tr><tr><td>Wickets</td><td>12</td><td>67</td><td>69</td></tr><tr><td>Economy</td><td>5.9</td><td>8.0</td><td>2</td></tr><tr><td>Balls per wicket</td><td>17.5</td><td>22.1</td><td>70</td></tr><tr><td>Dot balls</td><td>41%</td><td>39%</td><td>17</td></tr><tr><td>Boundary balls</td><td>7%</td><td>17%</td><td>1</td></tr><tr><td>Runs saved per 100 balls</td><td>+32</td><td>+6</td><td>7</td></tr></tbody></table><table><thead><tr><th>Under pressure</th><th>Balls</th><th>Economy</th></tr></thead><tbody><tr><td>Defending a total</td><td>92</td><td>7.6</td></tr><tr><td>Bowling first</td><td>118</td><td>4.6</td></tr><tr><td>Overs 1-15</td><td>196</td><td>6.0</td></tr><tr><td>IPL</td><td>39</td><td>6.0</td></tr><tr><td>T20I</td><td>171</td><td>5.9</td></tr><tr><td>v right-handers</td><td>144</td><td>5.7</td></tr><tr><td>v left-handers</td><td>66</td><td>6.5</td></tr></tbody></table></div>
+<p class="small"><b>Place in the order:</b> 0.04 Elo below #9 Taskin Ahmed, 0.81 above #11 Jamie Overton.</p>
+<p class="small"><b>By year</b>, runs saved per 100 pressure balls: 2022: +23 (82 balls) · 2023: +41 (23 balls) · 2024: +45 (23 balls) · 2025: +87 (30 balls) · 2026: +6 (52 balls)</p>
+<p class="small"><b>Best pressure match:</b> 2 for 2 in 10 pressure balls against Ireland, West Indies in Ireland T20I Series 2025, 15 Jun 2025.</p></div>
+
+<h2 class="page">6. What this means for RR</h2>
+<p>RR's own 2026 IPL season, rated the same way, ranked 4 of 10 for batting under pressure and
+8 of 10 for bowling under pressure. The bowling gap was in the middle overs: 9.2 an over
+under pressure against a league average of 8.5. At the death RR conceded 10.5 against
+10.5, a little better than average. (578 high-pressure balls, so treat this as a direction, not a verdict.)</p>
+<p>So the most useful signings are bowlers who can hold the middle overs while a chase is still alive, and that is
+where the spinners on this list do most of their work.</p>
+
+<p class="note">Retention lists for IPL 2027 were not public when I wrote this, so whether a player reaches the auction is
+not known yet.</p>
+
+<h2>7. Reliability and limitations</h2>
+<h3>Do the lists hold if I change the judgement calls?</h3>
+<table><thead><tr><th>Change</th><th>Batters still in top 10</th><th>Bowlers still in top 10</th></tr></thead><tbody><tr><td>Pressure = top 20% of balls (I use 25%)</td><td>7/10</td><td>8/10</td></tr><tr><td>Pressure = top 30% of balls</td><td>8/10</td><td>8/10</td></tr><tr><td>A wicket worth 4 runs (I use 6)</td><td>9/10</td><td>10/10</td></tr><tr><td>A wicket worth 8 runs</td><td>9/10</td><td>8/10</td></tr></tbody></table>
+<h3>Is it a real skill or luck?</h3>
+<p>I split the matches into two halves (odd and even) and rated players on each half separately. If pressure performance
+is a skill, the two ratings should agree. For batters the pressure Elo correlates at 0.40 across halves, against
+0.24 for a simple runs-above-average score. For bowlers it is 0.15 against -0.03.</p>
+<ul>
+<li>The batting list is reasonably stable. The bowling list is not: Narine is clear, and ranks 2 to 10 sit within six Elo points.</li>
+<li>Ranks 4 to 10 in both lists are within a few Elo points of each other.</li>
+<li>Elo moves further with more balls, so it favours players with long records over short, strong ones.</li>
+<li>Taskin Ahmed has no IPL matches in the data, so his rating comes
+from T20Is only. The opponent adjustment helps, but there is less evidence than for IPL regulars.</li>
+<li>In a first innings the time signal alone puts the last two overs above the threshold, whatever the score. Those overs
+are hard to bat in, but the label is automatic there.</li>
+<li>The data has no fielding positions, field settings or Impact Player tactics, and 2022 to 2026 is a short window.</li>
+</ul>
+
+<h2>8. How to reproduce</h2>
+<p><code>python analysis/pressure.py --check</code> rebuilds the match state, the ratings and the checks, and writes every
+eligible player to <code>batters.csv</code> and <code>bowlers.csv</code>. <code>python analysis/report.py</code> builds this
+report. Both use only the data pack, pandas, numpy and matplotlib.</p>
+</body></html>
