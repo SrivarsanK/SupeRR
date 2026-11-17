@@ -5,3 +5,9 @@ analysis/out/
 cricket-mcp-server/
 __pycache__/
 .edge-profile/
+.vercel/
+.env*
+# Dashboard: the copied taste-skill kit (37 MB, reinstall from the skill) and local check output.
+dashboard/assets/
+dashboard/.taste-skill/
+dashboard/shots/

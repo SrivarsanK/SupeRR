@@ -1,0 +1,15 @@
+# build and check files
+.taste-skill
+shots
+# kit parts this page does not load
+assets/photos
+assets/objects
+assets/scenes
+assets/diagrams
+assets/moments/_demo
+assets/layout/img
+assets/layout/hero-*.html
+assets/layout/_lab
+assets/ui/_lab
+assets/starter.html
+.env*

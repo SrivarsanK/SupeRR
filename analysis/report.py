@@ -4,6 +4,7 @@ Every number in the report is computed here from the data pack (via pressure.py)
 from scratch. Run `python analysis/pressure.py --check` first: the reliability table reads out/checks.txt.
 """
 import io
+import json
 import os
 import re
 import shutil
@@ -178,38 +179,46 @@ def rr_2026(b):
             "rr_econ": econ(rr).round(1), "lg_econ": econ(league).round(1), "rr_balls": int(s[rr].legal.sum())}
 
 
-def card(rank, r, pr, role, tag, note, rk, pool, order):
-    p, n = pr["pressure"], pr["normal"]
+def fmt(k, v):
+    if v is None:
+        return "-"
+    if k in ("Dot balls", "Boundary balls"):
+        return f"{v:.0%}"
+    if k in ("Balls", "Runs", "Wickets"):
+        return f"{int(v):,}"
+    if "per 100" in k:
+        return f"{v:+.0f}"
+    return f"{v:.1f}"
 
-    def fmt(k, v):
-        if v is None:
-            return "-"
-        if k in ("Dot balls", "Boundary balls"):
-            return f"{v:.0%}"
-        if k in ("Balls", "Runs", "Wickets"):
-            return f"{int(v):,}"
-        if "per 100" in k:
-            return f"{v:+.0f}"
-        return f"{v:.1f}"
 
-    unit = "Strike rate" if role == "bat" else "Economy"
-    figs = table([(k, fmt(k, p[k]), fmt(k, n[k]), "-" if pd.isna(rk[k]) else int(rk[k])) for k in p],
-                 ["", "Under pressure", "Normal", f"Rank of {pool}"])
-    splits = table([(label, balls, f"{v:.0f}" if role == "bat" else f"{v:.1f}") for label, balls, v in pr["splits"]],
-                   ["Under pressure", "Balls", unit])
-    years = " · ".join(f"{y}: {v:+.0f} ({n} balls)" for y, n, v in pr["years"])
-    bb = pr["best"]
+def facts(rank, r, pr, role, tag, note, rk, pool, order):
+    """One player's profile as display strings: the PDF card and the dashboard both render from this."""
+    p, n, bb = pr["pressure"], pr["normal"], pr["best"]
     day = pd.Timestamp(bb["date"])
     what = (f"{bb['runs']} off {bb['balls']} pressure balls" if role == "bat"
             else f"{bb['outs']} for {bb['runs']} in {bb['balls']} pressure balls")
-    measure = "runs above average" if role == "bat" else "runs saved"
-    return f"""<div class="card"><h3>{rank}. {r.player}</h3>
-<p class="meta">{tag} · Pressure Elo {r.pressure_elo:.0f} (normal {r.normal_elo:.0f}) · {pr['matches']} matches · {100 * r.consistency:.0f}% good matches</p>
-<p>{note}</p>
+    return {"rank": rank, "name": r.player, "tag": tag, "elo": int(round(r.pressure_elo)), "normalElo": int(round(r.normal_elo)),
+            "matches": int(pr["matches"]), "good": int(round(100 * r.consistency)), "note": note, "pool": pool, "order": order,
+            "unit": "Strike rate" if role == "bat" else "Economy",
+            "measure": "runs above average" if role == "bat" else "runs saved",
+            "figures": [[k, fmt(k, p[k]), fmt(k, n[k]), None if pd.isna(rk[k]) else int(rk[k])] for k in p],
+            "splits": [[label, balls, f"{v:.0f}" if role == "bat" else f"{v:.1f}"] for label, balls, v in pr["splits"]],
+            "years": [[y, n_, int(round(v))] for y, n_, v in pr["years"]],
+            "best": f"{what} against {bb['opp']}, {bb['comp']}, {day.day} {day:%b %Y}"}
+
+
+def card(f):
+    figs = table([(k, a, b, "-" if rank is None else rank) for k, a, b, rank in f["figures"]],
+                 ["", "Under pressure", "Normal", f"Rank of {f['pool']}"])
+    splits = table(f["splits"], ["Under pressure", "Balls", f["unit"]])
+    years = " · ".join(f"{y}: {v:+d} ({n} balls)" for y, n, v in f["years"])
+    return f"""<div class="card"><h3>{f['rank']}. {f['name']}</h3>
+<p class="meta">{f['tag']} · Pressure Elo {f['elo']} (normal {f['normalElo']}) · {f['matches']} matches · {f['good']}% good matches</p>
+<p>{f['note']}</p>
 <div class="two">{figs}{splits}</div>
-<p class="small"><b>Place in the order:</b> {order}.</p>
-<p class="small"><b>By year</b>, {measure} per 100 pressure balls: {years}</p>
-<p class="small"><b>Best pressure match:</b> {what} against {bb['opp']}, {bb['comp']}, {day.day} {day:%b %Y}.</p></div>"""
+<p class="small"><b>Place in the order:</b> {f['order']}.</p>
+<p class="small"><b>By year</b>, {f['measure']} per 100 pressure balls: {years}</p>
+<p class="small"><b>Best pressure match:</b> {f['best']}.</p></div>"""
 
 
 def checks_table():
@@ -279,10 +288,11 @@ def build():
         return f"{bat_role(x) if role == 'bat' else bowl_role(x)} · {side}"
 
     rk_bat, rk_bowl = pool_ranks(b, bat, "bat"), pool_ranks(b, bowl, "bowl")
-    cards_bat = "".join(card(int(r["rank"]), r, profile(b, i, "bat"), "bat", tag(rb[i], "bat"), NOTES[i],
-                             rk_bat.loc[i], len(bat), order_line(i, bat)) for i, r in bat.head(10).iterrows())
-    cards_bowl = "".join(card(int(r["rank"]), r, profile(b, i, "bowl"), "bowl", tag(rw[i], "bowl"), NOTES[i],
-                              rk_bowl.loc[i], len(bowl), order_line(i, bowl)) for i, r in bowl.head(10).iterrows())
+    f_bat = [facts(int(r["rank"]), r, profile(b, i, "bat"), "bat", tag(rb[i], "bat"), NOTES[i],
+                   rk_bat.loc[i], len(bat), order_line(i, bat)) for i, r in bat.head(10).iterrows()]
+    f_bowl = [facts(int(r["rank"]), r, profile(b, i, "bowl"), "bowl", tag(rw[i], "bowl"), NOTES[i],
+                    rk_bowl.loc[i], len(bowl), order_line(i, bowl)) for i, r in bowl.head(10).iterrows()]
+    cards_bat, cards_bowl = "".join(map(card, f_bat)), "".join(map(card, f_bowl))
 
     pretty = {"pressure = top 20% of balls": "Pressure = top 20% of balls (I use 25%)",
               "pressure = top 30% of balls": "Pressure = top 30% of balls",
@@ -463,6 +473,17 @@ report. Both use only the data pack, pandas, numpy and matplotlib.</p>
     shutil.rmtree(edge_profile, ignore_errors=True)
     assert os.path.getsize(pdf) > 20000, "PDF looks empty"
     print("wrote", pdf)
+
+    # Data for the dashboard page (dashboard/index.html is written by hand and reads this), plus the PDF it links to.
+    share = b.groupby(["innings", "over"]).hp.mean().unstack(0) * 100
+    data = {"bat": f_bat, "bowl": f_bowl, "byOver": {"first": share[1].round(1).tolist(), "chase": share[2].round(1).tolist()},
+            "rr": {"phases": list(rr["rr_econ"].index), "rr": rr["rr_econ"].tolist(), "league": rr["lg_econ"].tolist()},
+            "cut": {role: [[r.player, round(float(r.pressure_elo), 2)] for _, r in top.head(12).iterrows()]
+                    for role, top in (("bat", bat), ("bowl", bowl))}}
+    dash_dir = os.path.join(P.HERE, "..", "dashboard")
+    open(os.path.join(dash_dir, "players.js"), "w", encoding="utf-8").write("window.RR = " + json.dumps(data) + ";\n")
+    shutil.copy(pdf, os.path.join(dash_dir, "report.pdf"))
+    print("wrote", os.path.join(dash_dir, "players.js"))
 
 
 if __name__ == "__main__":
